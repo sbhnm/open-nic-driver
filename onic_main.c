@@ -90,24 +90,24 @@ extern void onic_set_ethtool_ops(struct net_device *netdev);
  **/
 static int onic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
-	struct net_device *netdev;
+	// struct net_device *netdev;
 	struct onic_private *priv;
-	struct sockaddr saddr;
-	char dev_name[IFNAMSIZ];
+	// struct sockaddr saddr;
+	// char dev_name[IFNAMSIZ];
 	int rv;
 	/* int pci_using_dac; */
-
+	pr_info("Setup Start!");
 	rv = pci_enable_device_mem(pdev);
 	if (rv < 0) {
 		dev_err(&pdev->dev, "pci_enable_device_mem, err = %d", rv);
 		return rv;
 	}
 
-	/* QDMA only supports 32-bit consistent DMA for descriptor ring */
+	// /* QDMA only supports 32-bit consistent DMA for descriptor ring */
 	rv = dma_set_mask(&pdev->dev, DMA_BIT_MASK(64));
 	if (rv < 0) {
 		dev_err(&pdev->dev, "Failed to set DMA masks");
-		// goto disable_device;
+		goto disable_device;
 	} else {
 		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
 	}
@@ -115,41 +115,23 @@ static int onic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	rv = pci_request_mem_regions(pdev, onic_drv_name);
 	if (rv < 0) {
 		dev_err(&pdev->dev, "pci_request_mem_regions, err = %d", rv);
-		// goto disable_device;
+		goto disable_device;
 	}
 
-	/* enable relaxed ordering */
+	// /* enable relaxed ordering */
 	pcie_capability_set_word(pdev, PCI_EXP_DEVCTL, PCI_EXP_DEVCTL_RELAX_EN);
-	/* enable extended tag */
+	// /* enable extended tag */
 	pcie_capability_set_word(pdev, PCI_EXP_DEVCTL, PCI_EXP_DEVCTL_EXT_TAG);
 	pci_set_master(pdev);
 	pci_save_state(pdev);
 	pcie_set_readrq(pdev, 512);
 
-	netdev = alloc_etherdev_mq(sizeof(struct onic_private),
-				   ONIC_MAX_QUEUES);
-	if (!netdev) {
-		dev_err(&pdev->dev, "alloc_etherdev_mq failed");
-		rv = -ENOMEM;
-		// goto release_pci_mem;
-	}
 
-	SET_NETDEV_DEV(netdev, &pdev->dev);
-	netdev->netdev_ops = &onic_netdev_ops;
-	onic_set_ethtool_ops(netdev);
 
-	snprintf(dev_name, IFNAMSIZ, "onic%ds%df%d",
-		 pdev->bus->number,
-		 PCI_SLOT(pdev->devfn),
-		 PCI_FUNC(pdev->devfn));
-	strlcpy(netdev->name, dev_name, sizeof(netdev->name));
 
-	memset(&saddr, 0, sizeof(struct sockaddr));
-	memcpy(saddr.sa_data, onic_default_dev_addr, 6);
-	get_random_bytes(saddr.sa_data + 3, 3);
-	onic_set_mac_address(netdev, (void *)&saddr);
 
-	priv = netdev_priv(netdev);
+	// priv = netdev_priv(netdev);
+	priv = kmalloc(sizeof(struct onic_private),GFP_KERNEL);
 
 	memset(priv, 0, sizeof(struct onic_private));
 	priv->RS_FEC = RS_FEC_ENABLED;
@@ -158,40 +140,39 @@ static int onic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		dev_info(&pdev->dev, "device is a master PF");
 		set_bit(ONIC_FLAG_MASTER_PF, priv->flags);
 	}
-	priv->pdev = pdev;
-	priv->netdev = netdev;
-	spin_lock_init(&priv->tx_lock);
-	spin_lock_init(&priv->rx_lock);
+	// priv->pdev = pdev;
+	// priv->netdev = netdev;
+	// spin_lock_init(&priv->tx_lock);
+	// spin_lock_init(&priv->rx_lock);
 
-	rv = onic_init_capacity(priv);
-	if (rv < 0) {
-		dev_err(&pdev->dev, "onic_init_capacity, err = %d", rv);
-		// goto free_netdev;
-	}
+	// rv = onic_init_capacity(priv);
+	// if (rv < 0) {
+	// 	dev_err(&pdev->dev, "onic_init_capacity, err = %d", rv);
+	// 	goto free_netdev;
+	// }
 
-	rv = onic_init_hardware(priv);
-	if (rv < 0) {
-		dev_err(&pdev->dev, "onic_init_hardware, err = %d", rv);
-		// goto clear_capacity;
-	}
+	// rv = onic_init_hardware(priv);
+	// if (rv < 0) {
+	// 	dev_err(&pdev->dev, "onic_init_hardware, err = %d", rv);
+	// 	goto clear_capacity;
+	// }
 
-	rv = onic_init_interrupt(priv);
-	if (rv < 0) {
-		dev_err(&pdev->dev, "onic_init_interrupt, err = %d", rv);
-		// goto clear_hardware;
-	}
+	// rv = onic_init_interrupt(priv);
+	// if (rv < 0) {
+	// 	dev_err(&pdev->dev, "onic_init_interrupt, err = %d", rv);
+	// 	goto clear_hardware;
+	// }
 
-	// netif_set_real_num_tx_queues(netdev, priv->num_tx_queues);
-	// netif_set_real_num_rx_queues(netdev, priv->num_rx_queues);
 
-	rv = register_netdev(netdev);
+	// rv = register_netdev(netdev);
 	// if (rv < 0) {
 	// 	dev_err(&pdev->dev, "register_netdev, err = %d", rv);
 	// 	goto clear_interrupt;
 	// }
 
-	// pci_set_drvdata(pdev, priv);
-	// netif_carrier_off(netdev);
+	pci_set_drvdata(pdev, priv);
+
+	pr_info("Setup OK!");
 	return 0;
 
 // clear_interrupt:
@@ -200,12 +181,10 @@ static int onic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 // 	onic_clear_hardware(priv);
 // clear_capacity:
 // 	onic_clear_capacity(priv);
-// free_netdev:
-// 	free_netdev(priv->netdev);
 // release_pci_mem:
 // 	pci_release_mem_regions(pdev);
-// disable_device:
-// 	pci_disable_device(pdev);
+disable_device:
+	pci_disable_device(pdev);
 
 	return rv;
 }
@@ -218,16 +197,17 @@ static void onic_remove(struct pci_dev *pdev)
 {
 	struct onic_private *priv = pci_get_drvdata(pdev);
 
-	unregister_netdev(priv->netdev);
 
-	onic_clear_interrupt(priv);
+	// onic_clear_interrupt(priv);
 	onic_clear_hardware(priv);
-	onic_clear_capacity(priv);
+	// onic_clear_capacity(priv);
 
-	free_netdev(priv->netdev);
 
-	// pci_set_drvdata(pdev, NULL);
-	pci_release_mem_regions(pdev);
+	pci_set_drvdata(pdev, NULL);
+	// pci_release_mem_regions(pdev);
+
+	pr_info("Rm OK!");
+
 	pci_disable_device(pdev);
 }
 

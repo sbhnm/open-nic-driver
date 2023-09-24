@@ -306,6 +306,10 @@ void onic_clear_hardware(struct onic_private *priv)
 	struct onic_hardware *hw = &priv->hw;
 	struct pci_dev *pdev = priv->pdev;
 	struct qdma_dev *qdev = (struct qdma_dev *)hw->qdma;
+	if(0)
+	{
+
+	
 	u16 func_id = PCI_FUNC(pdev->devfn);
 
 	/* clear the function map in shell */
@@ -317,6 +321,7 @@ void onic_clear_hardware(struct onic_private *priv)
 	pci_iounmap(pdev, hw->addr);
 
 	memset(hw, 0, sizeof(struct onic_hardware));
+	}
 }
 
 void onic_qdma_init_error_interrupt(unsigned long qdma, u16 vid)
