@@ -96,7 +96,7 @@ static int onic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	// char dev_name[IFNAMSIZ];
 	int rv;
 	/* int pci_using_dac; */
-	pr_info("Setup Start!");
+	dev_info(&pdev->dev,"Setup Start!");
 	rv = pci_enable_device_mem(pdev);
 	if (rv < 0) {
 		dev_err(&pdev->dev, "pci_enable_device_mem, err = %d", rv);
@@ -140,22 +140,22 @@ static int onic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		dev_info(&pdev->dev, "device is a master PF");
 		set_bit(ONIC_FLAG_MASTER_PF, priv->flags);
 	}
-	// priv->pdev = pdev;
+	priv->pdev = pdev;
 	// priv->netdev = netdev;
-	// spin_lock_init(&priv->tx_lock);
-	// spin_lock_init(&priv->rx_lock);
+	spin_lock_init(&priv->tx_lock);
+	spin_lock_init(&priv->rx_lock);
 
-	// rv = onic_init_capacity(priv);
-	// if (rv < 0) {
-	// 	dev_err(&pdev->dev, "onic_init_capacity, err = %d", rv);
-	// 	goto free_netdev;
-	// }
+	rv = onic_init_capacity(priv);
+	if (rv < 0) {
+		dev_err(&pdev->dev, "onic_init_capacity, err = %d", rv);
+		goto free_netdev;
+	}
 
-	// rv = onic_init_hardware(priv);
-	// if (rv < 0) {
-	// 	dev_err(&pdev->dev, "onic_init_hardware, err = %d", rv);
-	// 	goto clear_capacity;
-	// }
+	rv = onic_init_hardware(priv);
+	if (rv < 0) {
+		dev_err(&pdev->dev, "onic_init_hardware, err = %d", rv);
+		goto clear_capacity;
+	}
 
 	// rv = onic_init_interrupt(priv);
 	// if (rv < 0) {
@@ -172,15 +172,15 @@ static int onic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 
 	pci_set_drvdata(pdev, priv);
 
-	pr_info("Setup OK!");
+	dev_info(&pdev->dev,"Setup OK!");
 	return 0;
 
 // clear_interrupt:
 // 	onic_clear_interrupt(priv);
 // clear_hardware:
 // 	onic_clear_hardware(priv);
-// clear_capacity:
-// 	onic_clear_capacity(priv);
+clear_capacity:
+	onic_clear_capacity(priv);
 // release_pci_mem:
 // 	pci_release_mem_regions(pdev);
 disable_device:
@@ -204,11 +204,13 @@ static void onic_remove(struct pci_dev *pdev)
 
 
 	pci_set_drvdata(pdev, NULL);
-	// pci_release_mem_regions(pdev);
+	pci_release_mem_regions(pdev);
 
-	pr_info("Rm OK!");
+	dev_info(&pdev->dev,"Rm OK!");
 
 	pci_disable_device(pdev);
+	kfree(priv);
+	
 }
 
 /* static const struct pci_error_handlers qdma_err_handler = { */

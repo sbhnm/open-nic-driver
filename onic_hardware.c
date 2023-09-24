@@ -237,19 +237,22 @@ int onic_init_hardware(struct onic_private *priv)
         priv->hw.RS_FEC = priv->RS_FEC;
 
 	/* shell registers uses BAR-2 */
+	dev_info(&pdev->dev, "240");
+
 	hw->addr = pci_iomap_range(pdev, 2, SHELL_START, SHELL_MAXLEN);
 	if (!hw->addr)
 		return -EINVAL;
 
 	/* QDMA IP registers uses BAR-0 */
 	qdev = qdma_create_dev(pdev, 0);
+	dev_info(&pdev->dev, "248");
 	if (!qdev)
 		return -ENOMEM;
 
 	func_id = PCI_FUNC(pdev->devfn);
 	qbase = func_id * ONIC_MAX_QUEUES;
 	qmax = max(priv->num_tx_queues, priv->num_rx_queues);
-
+	dev_info(&pdev->dev, "255");
 	/* initialize QDMA function map context */
 	memset(&fmap_ctxt, 0, sizeof(struct qdma_fmap_ctxt));
 	fmap_ctxt.qbase = qbase;
@@ -306,8 +309,6 @@ void onic_clear_hardware(struct onic_private *priv)
 	struct onic_hardware *hw = &priv->hw;
 	struct pci_dev *pdev = priv->pdev;
 	struct qdma_dev *qdev = (struct qdma_dev *)hw->qdma;
-	if(0)
-	{
 
 	
 	u16 func_id = PCI_FUNC(pdev->devfn);
@@ -321,7 +322,6 @@ void onic_clear_hardware(struct onic_private *priv)
 	pci_iounmap(pdev, hw->addr);
 
 	memset(hw, 0, sizeof(struct onic_hardware));
-	}
 }
 
 void onic_qdma_init_error_interrupt(unsigned long qdma, u16 vid)
