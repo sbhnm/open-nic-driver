@@ -51,56 +51,9 @@ module_param(RS_FEC_ENABLED, int, 0644);
 
 
 static const struct pci_device_id onic_pci_tbl[] = {
-	/* Gen 3 PF */
-	/* PCIe lane width x1 */
-	{ PCI_DEVICE(0x10ee, 0x9031), },	/* PF 0 */
-	{ PCI_DEVICE(0x10ee, 0x9131), },	/* PF 1 */
-	{ PCI_DEVICE(0x10ee, 0x9231), },	/* PF 2 */
-	{ PCI_DEVICE(0x10ee, 0x9331), },	/* PF 3 */
-	/* PCIe lane width x2 */
-	{ PCI_DEVICE(0x10ee, 0x9032), },	/* PF 0 */
-	{ PCI_DEVICE(0x10ee, 0x9132), },	/* PF 1 */
-	{ PCI_DEVICE(0x10ee, 0x9232), },	/* PF 2 */
-	{ PCI_DEVICE(0x10ee, 0x9332), },	/* PF 3 */
-	/* PCIe lane width x4 */
-	{ PCI_DEVICE(0x10ee, 0x9034), },	/* PF 0 */
-	{ PCI_DEVICE(0x10ee, 0x9134), },	/* PF 1 */
-	{ PCI_DEVICE(0x10ee, 0x9234), },	/* PF 2 */
-	{ PCI_DEVICE(0x10ee, 0x9334), },	/* PF 3 */
-	/* PCIe lane width x8 */
-	{ PCI_DEVICE(0x10ee, 0x9038), },	/* PF 0 */
-	{ PCI_DEVICE(0x10ee, 0x9138), },	/* PF 1 */
-	{ PCI_DEVICE(0x10ee, 0x9238), },	/* PF 2 */
-	{ PCI_DEVICE(0x10ee, 0x9338), },	/* PF 3 */
 	/* PCIe lane width x16 */
 	{ PCI_DEVICE(0x10ee, 0x903f), },	/* PF 0 */
-	{ PCI_DEVICE(0x10ee, 0x913f), },	/* PF 1 */
-	{ PCI_DEVICE(0x10ee, 0x923f), },	/* PF 2 */
-	{ PCI_DEVICE(0x10ee, 0x933f), },	/* PF 3 */
-	/* { PCI_DEVICE(0x10ee, 0x6a9f), }, */	     /* PF 0 */
-	{ PCI_DEVICE(0x10ee, 0x6aa0), },	/* PF 1 */
 
-	/* Gen 4 PF */
-	/* PCIe lane width x1 */
-	{ PCI_DEVICE(0x10ee, 0x9041), },	/* PF 0 */
-	{ PCI_DEVICE(0x10ee, 0x9141), },	/* PF 1 */
-	{ PCI_DEVICE(0x10ee, 0x9241), },	/* PF 2 */
-	{ PCI_DEVICE(0x10ee, 0x9341), },	/* PF 3 */
-	/* PCIe lane width x2 */
-	{ PCI_DEVICE(0x10ee, 0x9042), },	/* PF 0 */
-	{ PCI_DEVICE(0x10ee, 0x9142), },	/* PF 1 */
-	{ PCI_DEVICE(0x10ee, 0x9242), },	/* PF 2 */
-	{ PCI_DEVICE(0x10ee, 0x9342), },	/* PF 3 */
-	/* PCIe lane width x4 */
-	{ PCI_DEVICE(0x10ee, 0x9044), },	/* PF 0 */
-	{ PCI_DEVICE(0x10ee, 0x9144), },	/* PF 1 */
-	{ PCI_DEVICE(0x10ee, 0x9244), },	/* PF 2 */
-	{ PCI_DEVICE(0x10ee, 0x9344), },	/* PF 3 */
-	/* PCIe lane width x8 */
-	{ PCI_DEVICE(0x10ee, 0x9048), },	/* PF 0 */
-	{ PCI_DEVICE(0x10ee, 0x9148), },	/* PF 1 */
-	{ PCI_DEVICE(0x10ee, 0x9248), },	/* PF 2 */
-	{ PCI_DEVICE(0x10ee, 0x9348), },	/* PF 3 */
 
 	{0,}
 };
@@ -154,7 +107,7 @@ static int onic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	rv = dma_set_mask(&pdev->dev, DMA_BIT_MASK(64));
 	if (rv < 0) {
 		dev_err(&pdev->dev, "Failed to set DMA masks");
-		goto disable_device;
+		// goto disable_device;
 	} else {
 		dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
 	}
@@ -162,7 +115,7 @@ static int onic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	rv = pci_request_mem_regions(pdev, onic_drv_name);
 	if (rv < 0) {
 		dev_err(&pdev->dev, "pci_request_mem_regions, err = %d", rv);
-		goto disable_device;
+		// goto disable_device;
 	}
 
 	/* enable relaxed ordering */
@@ -178,7 +131,7 @@ static int onic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	if (!netdev) {
 		dev_err(&pdev->dev, "alloc_etherdev_mq failed");
 		rv = -ENOMEM;
-		goto release_pci_mem;
+		// goto release_pci_mem;
 	}
 
 	SET_NETDEV_DEV(netdev, &pdev->dev);
@@ -213,46 +166,46 @@ static int onic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	rv = onic_init_capacity(priv);
 	if (rv < 0) {
 		dev_err(&pdev->dev, "onic_init_capacity, err = %d", rv);
-		goto free_netdev;
+		// goto free_netdev;
 	}
 
 	rv = onic_init_hardware(priv);
 	if (rv < 0) {
 		dev_err(&pdev->dev, "onic_init_hardware, err = %d", rv);
-		goto clear_capacity;
+		// goto clear_capacity;
 	}
 
 	rv = onic_init_interrupt(priv);
 	if (rv < 0) {
 		dev_err(&pdev->dev, "onic_init_interrupt, err = %d", rv);
-		goto clear_hardware;
+		// goto clear_hardware;
 	}
 
-	netif_set_real_num_tx_queues(netdev, priv->num_tx_queues);
-	netif_set_real_num_rx_queues(netdev, priv->num_rx_queues);
+	// netif_set_real_num_tx_queues(netdev, priv->num_tx_queues);
+	// netif_set_real_num_rx_queues(netdev, priv->num_rx_queues);
 
 	rv = register_netdev(netdev);
-	if (rv < 0) {
-		dev_err(&pdev->dev, "register_netdev, err = %d", rv);
-		goto clear_interrupt;
-	}
+	// if (rv < 0) {
+	// 	dev_err(&pdev->dev, "register_netdev, err = %d", rv);
+	// 	goto clear_interrupt;
+	// }
 
-	pci_set_drvdata(pdev, priv);
-	netif_carrier_off(netdev);
+	// pci_set_drvdata(pdev, priv);
+	// netif_carrier_off(netdev);
 	return 0;
 
-clear_interrupt:
-	onic_clear_interrupt(priv);
-clear_hardware:
-	onic_clear_hardware(priv);
-clear_capacity:
-	onic_clear_capacity(priv);
-free_netdev:
-	free_netdev(priv->netdev);
-release_pci_mem:
-	pci_release_mem_regions(pdev);
-disable_device:
-	pci_disable_device(pdev);
+// clear_interrupt:
+// 	onic_clear_interrupt(priv);
+// clear_hardware:
+// 	onic_clear_hardware(priv);
+// clear_capacity:
+// 	onic_clear_capacity(priv);
+// free_netdev:
+// 	free_netdev(priv->netdev);
+// release_pci_mem:
+// 	pci_release_mem_regions(pdev);
+// disable_device:
+// 	pci_disable_device(pdev);
 
 	return rv;
 }
@@ -273,7 +226,7 @@ static void onic_remove(struct pci_dev *pdev)
 
 	free_netdev(priv->netdev);
 
-	pci_set_drvdata(pdev, NULL);
+	// pci_set_drvdata(pdev, NULL);
 	pci_release_mem_regions(pdev);
 	pci_disable_device(pdev);
 }
