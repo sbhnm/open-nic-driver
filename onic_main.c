@@ -145,11 +145,11 @@ static int onic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	spin_lock_init(&priv->tx_lock);
 	spin_lock_init(&priv->rx_lock);
 
-	// rv = onic_init_capacity(priv);
-	// if (rv < 0) {
-	// 	dev_err(&pdev->dev, "onic_init_capacity, err = %d", rv);
-	// 	goto free_netdev;
-	// }
+	rv = onic_init_capacity(priv);
+	if (rv < 0) {
+		dev_err(&pdev->dev, "onic_init_capacity, err = %d", rv);
+		goto clear_capacity;
+	}
 
 	rv = onic_init_hardware(priv);
 	if (rv < 0) {
@@ -157,11 +157,11 @@ static int onic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		goto clear_capacity;
 	}
 
-	// rv = onic_init_interrupt(priv);
-	// if (rv < 0) {
-	// 	dev_err(&pdev->dev, "onic_init_interrupt, err = %d", rv);
-	// 	goto clear_hardware;
-	// }
+	rv = onic_init_interrupt(priv);
+	if (rv < 0) {
+		dev_err(&pdev->dev, "onic_init_interrupt, err = %d", rv);
+		goto clear_hardware;
+	}
 
 
 	// rv = register_netdev(netdev);
@@ -176,9 +176,10 @@ static int onic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 	return 0;
 
 // clear_interrupt:
-// 	onic_clear_interrupt(priv);
-// clear_hardware:
-// 	onic_clear_hardware(priv);
+	// onic_clear_interrupt(priv);
+clear_hardware:
+	onic_clear_interrupt(priv);
+	onic_clear_hardware(priv);
 clear_capacity:
 	onic_clear_capacity(priv);
 // release_pci_mem:
@@ -198,9 +199,9 @@ static void onic_remove(struct pci_dev *pdev)
 	struct onic_private *priv = pci_get_drvdata(pdev);
 
 
-	// onic_clear_interrupt(priv);
+	onic_clear_interrupt(priv);
 	onic_clear_hardware(priv);
-	// onic_clear_capacity(priv);
+	onic_clear_capacity(priv);
 
 
 	pci_set_drvdata(pdev, NULL);

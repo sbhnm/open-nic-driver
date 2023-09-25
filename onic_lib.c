@@ -110,7 +110,7 @@ static int onic_init_q_vector(struct onic_private *priv, u16 vid)
 	vec->priv = priv;
 	vec->vid = vid;
 
-	snprintf(name, ONIC_MAX_IRQ_NAME, "%s-%d", priv->netdev->name, vid);
+	snprintf(name, ONIC_MAX_IRQ_NAME, "%s-%d", "spmv irq", vid);
 	rv = request_irq(pci_irq_vector(pdev, vid), onic_q_handler,
 			 0, name, vec);
 	if (rv < 0) {
@@ -177,12 +177,15 @@ static int onic_acquire_msix_vectors(struct onic_private *priv)
  **/
 static void onic_set_num_queues(struct onic_private *priv)
 {
-	struct net_device *dev = priv->netdev;
+	// struct net_device *dev = priv->netdev;
 
 	priv->num_tx_queues =
-		min_t(u16, priv->num_q_vectors, dev->real_num_tx_queues);
+		priv->num_q_vectors;
+
+		// min_t(u16, priv->num_q_vectors, dev->real_num_tx_queues);
 	priv->num_rx_queues =
-		min_t(u16, priv->num_q_vectors, dev->real_num_rx_queues);
+		priv->num_q_vectors;
+		// min_t(u16, priv->num_q_vectors, dev->real_num_rx_queues);
 }
 
 int onic_init_capacity(struct onic_private *priv)
