@@ -75,9 +75,10 @@ u16 onic_ring_count(u8 idx)
  **/
 static void onic_qdma_init_csr(struct qdma_dev *qdev)
 {
+	
 	u32 offset, val;
 	int i;
-
+	return ;
 	/* initialize descriptor ring size registers */
 	for (i = 0; i < QDMA_NUM_DESC_RNGCNT; ++i) {
 		offset = QDMA_OFFSET_GLBL_RNG_SZ + (i * 4);
@@ -232,7 +233,8 @@ int onic_init_hardware(struct onic_private *priv)
 	u16 qbase, qmax, func_id;
 	u32 val;
 	u8 master_pf = test_bit(ONIC_FLAG_MASTER_PF, priv->flags);
-	int i, rv;
+	// int i, rv;
+	int rv;
 
         priv->hw.RS_FEC = priv->RS_FEC;
 
@@ -263,19 +265,25 @@ int onic_init_hardware(struct onic_private *priv)
 	rv = qdma_write_fmap_ctxt(qdev, &fmap_ctxt);
 	if (rv < 0)
 		goto clear_hardware;
-
+	dev_info(&pdev->dev, "266");
 	/* inform shell about the function map */
 	val = (FIELD_SET(QDMA_FUNC_QCONF_QBASE_MASK, qbase) |
 	       FIELD_SET(QDMA_FUNC_QCONF_NUMQ_MASK, qmax));
 	onic_write_reg(hw, QDMA_FUNC_OFFSET_QCONF(func_id), val);
 
-	/* initialize indirection table */
-	for (i = 0; i < 128; ++i) {
-		u32 val = (i % qmax) & 0x0000FFFF;
-		u32 offset = QDMA_FUNC_OFFSET_INDIR_TABLE(func_id, i);
-		onic_write_reg(hw, offset, val);
-	}
+	onic_write_reg(hw, QDMA_FUNC_OFFSET_QCONF(func_id),666);
+	dev_info(&pdev->dev, "2777");
+	
+	dev_info(&pdev->dev, "read val %d",onic_read_reg(hw, QDMA_FUNC_OFFSET_QCONF(func_id)));
 
+	dev_info(&pdev->dev, "271");
+	/* initialize indirection table */
+	// for (i = 0; i < 128; ++i) {
+	// 	u32 val = (i % qmax) & 0x0000FFFF;
+	// 	u32 offset = QDMA_FUNC_OFFSET_INDIR_TABLE(func_id, i);
+	// 	onic_write_reg(hw, offset, val);
+	// }
+	dev_info(&pdev->dev, "278");
 	/* initialize global registers if device is a master PF */
 	if (master_pf)
 		onic_qdma_init_csr(qdev);
