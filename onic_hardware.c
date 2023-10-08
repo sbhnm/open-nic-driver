@@ -247,14 +247,14 @@ int onic_init_hardware(struct onic_private *priv)
 
 	/* QDMA IP registers uses BAR-0 */
 	qdev = qdma_create_dev(pdev, 0);
-	dev_info(&pdev->dev, "248");
+	// dev_info(&pdev->dev, "248");
 	if (!qdev)
 		return -ENOMEM;
 
 	func_id = PCI_FUNC(pdev->devfn);
 	qbase = func_id * ONIC_MAX_QUEUES;
 	qmax = max(priv->num_tx_queues, priv->num_rx_queues);
-	dev_info(&pdev->dev, "255");
+	// dev_info(&pdev->dev, "255");
 	/* initialize QDMA function map context */
 	memset(&fmap_ctxt, 0, sizeof(struct qdma_fmap_ctxt));
 	fmap_ctxt.qbase = qbase;
@@ -265,25 +265,25 @@ int onic_init_hardware(struct onic_private *priv)
 	rv = qdma_write_fmap_ctxt(qdev, &fmap_ctxt);
 	if (rv < 0)
 		goto clear_hardware;
-	dev_info(&pdev->dev, "266");
+	// dev_info(&pdev->dev, "266");
 	/* inform shell about the function map */
 	val = (FIELD_SET(QDMA_FUNC_QCONF_QBASE_MASK, qbase) |
 	       FIELD_SET(QDMA_FUNC_QCONF_NUMQ_MASK, qmax));
 	onic_write_reg(hw, QDMA_FUNC_OFFSET_QCONF(func_id), val);
 
 	onic_write_reg(hw, QDMA_FUNC_OFFSET_QCONF(func_id),666);
-	dev_info(&pdev->dev, "2777");
+	// dev_info(&pdev->dev, "2777");
 	
 	dev_info(&pdev->dev, "read val %d",onic_read_reg(hw, QDMA_FUNC_OFFSET_QCONF(func_id)));
 
-	dev_info(&pdev->dev, "271");
+	// dev_info(&pdev->dev, "271");
 	/* initialize indirection table */
 	// for (i = 0; i < 128; ++i) {
 	// 	u32 val = (i % qmax) & 0x0000FFFF;
 	// 	u32 offset = QDMA_FUNC_OFFSET_INDIR_TABLE(func_id, i);
 	// 	onic_write_reg(hw, offset, val);
 	// }
-	dev_info(&pdev->dev, "278");
+	// dev_info(&pdev->dev, "278");
 	/* initialize global registers if device is a master PF */
 	if (master_pf)
 		onic_qdma_init_csr(qdev);
