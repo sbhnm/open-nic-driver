@@ -671,9 +671,10 @@ int onic_stop_netdev(struct net_device *dev)
 	return 0;
 }
 
-netdev_tx_t onic_xmit_frame(struct sk_buff *skb, struct net_device *dev)
+// netdev_tx_t onic_xmit_frame(struct sk_buff *skb, struct net_device *dev)
+netdev_tx_t onic_xmit_frame(struct sk_buff *skb, void *dev)
 {
-	struct onic_private *priv = netdev_priv(dev);
+	struct onic_private *priv = dev;
 	struct onic_tx_queue *q;
 	struct onic_ring *ring;
 	struct qdma_h2c_st_desc desc;
@@ -681,7 +682,7 @@ netdev_tx_t onic_xmit_frame(struct sk_buff *skb, struct net_device *dev)
 	dma_addr_t dma_addr;
 	u8 *desc_ptr;
 	int rv;
-	bool debug = 0;
+	// bool debug = 0;
 	bool check_rv = 0;
 
 	q = priv->tx_queue[qid];
@@ -690,8 +691,8 @@ netdev_tx_t onic_xmit_frame(struct sk_buff *skb, struct net_device *dev)
 	onic_tx_clean(q);
 
 	if (onic_ring_full(ring)) {
-		if (debug)
-			netdev_info(dev, "ring is full");
+		// if (debug)
+		// 	netdev_info(dev, "ring is full");
 		return NETDEV_TX_BUSY;
 	}
 

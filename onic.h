@@ -16,7 +16,7 @@
  */
 #ifndef __ONIC_H__
 #define __ONIC_H__
-
+#include <linux/cdev.h>
 #include <linux/netdevice.h>
 #include <linux/cpumask.h>
 
@@ -94,6 +94,9 @@ struct onic_private {
 	struct list_head dev_list;
 
 	struct pci_dev *pdev;
+
+	dev_t spmv_dev;
+	struct cdev spmv_cdev;
 	DECLARE_BITMAP(state, 32);
 	DECLARE_BITMAP(flags, 32);
 

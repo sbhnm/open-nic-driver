@@ -41,6 +41,7 @@ char onic_drv_name[] = "open-nic-vf";
 #endif
 #define DEVICE_NAME "spmv_dev"
 #define DRV_VER "0.21"
+#define BUFFER_SIZE 4096
 const char onic_drv_str[] = DRV_STR;
 const char onic_drv_ver[] = DRV_VER;
 
@@ -52,9 +53,7 @@ MODULE_VERSION(DRV_VER);
 static int RS_FEC_ENABLED=1;
 module_param(RS_FEC_ENABLED, int, 0644);
 struct class *class; 
-struct device *device; 
-static dev_t spmv_dev;
-static struct cdev spmv_cdev;
+
 
 static const struct pci_device_id onic_pci_tbl[] = {
 	/* PCIe lane width x16 */
@@ -75,34 +74,80 @@ static const unsigned char onic_default_dev_addr[] = {
 	0x00, 0x0A, 0x35, 0x00, 0x00, 0x00
 };
 
-// static const struct net_device_ops onic_netdev_ops = {
-// 	.ndo_open = onic_open_netdev,
-// 	.ndo_stop = onic_stop_netdev,
-// 	.ndo_start_xmit = onic_xmit_frame,
-// 	.ndo_set_mac_address = onic_set_mac_address,
-// 	.ndo_do_ioctl = onic_do_ioctl,
-// 	.ndo_change_mtu = onic_change_mtu,
-// 	.ndo_get_stats64 = onic_get_stats64,
-// };
-
-static int mychardev_open(struct inode *inode, struct file *file)
+static int spmv_chardev_open(struct inode *inode, struct file *file)
 {
     printk(KERN_INFO "spmvdev: Device opened\n");
     return 0;
 }
 
-static int mychardev_release(struct inode *inode, struct file *file)
+static int spmv_chardev_release(struct inode *inode, struct file *file)
 {
     printk(KERN_INFO "spmvdev: Device closed\n");
     return 0;
 }
+static ssize_t spmv_chardev_read(struct file *file, char __user *user_buffer, size_t count, loff_t *offset)
+{
+    // ssize_t bytes_read = 0;
+    // if (*offset < BUFFER_SIZE) {
+    //     bytes_read = min(count, (size_t)(BUFFER_SIZE - *offset));
+    //     if (copy_to_user(user_buffer, &device_buffer[*offset], bytes_read)) {
+    //         return -EFAULT;
+    //     }
+    //     *offset += bytes_read;
+    // }
+    // return bytes_read;
+	return 0;
+}
+void test_end(void)
+{
+	return;
+}
+static ssize_t spmv_chardev_write(struct file *file, const char __user *user_buffer, size_t count, loff_t *offset)
+{
+	// struct onic_private * priv = 
+	void * spmv_dma_data;
+	ssize_t bytes_written = 0;
+	// enable_dma_send
+	if (*offset < BUFFER_SIZE) 
+	{
+		bytes_written = min(count, (size_t)(BUFFER_SIZE - *offset));
+		spmv_dma_data = kmalloc(bytes_written,GFP_KERNEL);
+		if (copy_from_user(spmv_dma_data, user_buffer, bytes_written)) 
+		{
+            return -EFAULT;
+        }
+	}
+	
+
+	
+	test_end();
+	// test send end
+
+	// free
+	kfree(spmv_dma_data);
+    // ssize_t bytes_written = 0;
+    // if (*offset < BUFFER_SIZE) {
+    //     bytes_written = min(count, (size_t)(BUFFER_SIZE - *offset));
+    //     if (copy_from_user(&device_buffer[*offset], user_buffer, bytes_written)) {
+    //         return -EFAULT;
+    //     }
+    //     *offset += bytes_written;
+    // }
+    // return bytes_written;
+	return 0;
+}
+static long spmv_unlocked_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	return 0;
+}
 
 static struct file_operations spmv_fops = {
     .owner = THIS_MODULE,
-    .open = mychardev_open,
-    .release = mychardev_release,
-    // .read = mychardev_read,
-    // .write = onic_xmit_frame,
+    .open = spmv_chardev_open,
+    .release = spmv_chardev_release,
+    .read = spmv_chardev_read,
+    .write = spmv_chardev_write,
+	.unlocked_ioctl = spmv_unlocked_ioctl,
 };
 
 extern void onic_set_ethtool_ops(struct net_device *netdev);
@@ -118,10 +163,15 @@ static int onic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
 	// struct net_device *netdev;
 	struct onic_private *priv;
+	int major_num,minor_num;
+
+	
 	// struct sockaddr saddr;
 	// char dev_name[IFNAMSIZ];
 	int rv;
 	/* int pci_using_dac; */
+
+
 	dev_info(&pdev->dev,"Setup Start!");
 	rv = pci_enable_device_mem(pdev);
 	if (rv < 0) {
@@ -198,8 +248,25 @@ static int onic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 
 	pci_set_drvdata(pdev, priv);
 
+	if (alloc_chrdev_region(&priv->spmv_dev, 0, 1, DEVICE_NAME) < 0) {
+        printk(KERN_ERR "Failed to allocate character device region\n");
+        return -1;
+    }
 
-    device = device_create(class,NULL,spmv_dev,NULL,DEVICE_NAME);
+	cdev_init(&priv->spmv_cdev, &spmv_fops);
+	
+	if (cdev_add(&priv->spmv_cdev, priv->spmv_dev, 1) < 0) {
+        printk(KERN_ERR "Failed to add character device\n");
+        unregister_chrdev_region(priv->spmv_dev, 1);
+        return -1;
+    }
+    major_num = MAJOR(priv->spmv_dev);
+    minor_num = MINOR(priv->spmv_dev);
+    printk(KERN_INFO"spmvdev: device  major_num = %d\n",major_num);
+    printk(KERN_INFO"spmvdev: device minor_num = %d\n",minor_num);
+
+
+    device_create(class,NULL,priv->spmv_dev,priv,DEVICE_NAME);
 
 	dev_info(&pdev->dev,"Setup OK!");
 	return 0;
@@ -240,7 +307,13 @@ static void onic_remove(struct pci_dev *pdev)
 
 	pci_disable_device(pdev);
 	kfree(priv);
-	device_destroy(class,spmv_dev);  //注销设备
+
+	
+	device_destroy(class,priv->spmv_dev);  //注销设备
+	
+	cdev_del(&priv->spmv_cdev);
+    unregister_chrdev_region(priv->spmv_dev, 1);
+
 }
 
 /* static const struct pci_error_handlers qdma_err_handler = { */
@@ -264,26 +337,8 @@ static struct pci_driver pci_driver = {
 
 static int __init onic_init_module(void)
 {
-    int major_num,minor_num;
+    
 	pr_info("%s %s", onic_drv_str, onic_drv_ver);
-	
-	if (alloc_chrdev_region(&spmv_dev, 0, 1, DEVICE_NAME) < 0) {
-        printk(KERN_ERR "Failed to allocate character device region\n");
-        return -1;
-    }
-
-	cdev_init(&spmv_cdev, &spmv_fops);
-	
-	if (cdev_add(&spmv_cdev, spmv_dev, 1) < 0) {
-        printk(KERN_ERR "Failed to add character device\n");
-        unregister_chrdev_region(spmv_dev, 1);
-        return -1;
-    }
-    major_num = MAJOR(spmv_dev);
-    minor_num = MINOR(spmv_dev);
-    printk(KERN_INFO"spmvdev: device  major_num = %d\n",major_num);
-    printk(KERN_INFO"spmvdev: device minor_num = %d\n",minor_num);
-
 
     class = class_create(THIS_MODULE,DEVICE_NAME); //注册类
 	// 
@@ -300,8 +355,6 @@ static void __exit onic_exit_module(void)
 	
 	pci_unregister_driver(&pci_driver);
 
-	cdev_del(&spmv_cdev);
-    unregister_chrdev_region(spmv_dev, 1);
 	class_destroy(class); //注销类
     printk(KERN_INFO "spmvdev: Character device unregistered\n");
 }
