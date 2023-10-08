@@ -104,7 +104,7 @@ void test_end(void)
 }
 static ssize_t spmv_chardev_write(struct file *file, const char __user *user_buffer, size_t count, loff_t *offset)
 {
-	// struct onic_private * priv = 
+	struct onic_private * priv = dev_get_drvdata(file->f_inode->i_cdev->dev);
 	void * spmv_dma_data;
 	ssize_t bytes_written = 0;
 	// enable_dma_send
@@ -118,7 +118,7 @@ static ssize_t spmv_chardev_write(struct file *file, const char __user *user_buf
         }
 	}
 	
-
+	onic_xmit_frame(,priv);
 	
 	test_end();
 	// test send end
@@ -161,7 +161,7 @@ extern void onic_set_ethtool_ops(struct net_device *netdev);
  **/
 static int onic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 {
-	// struct net_device *netdev;
+	struct device *spmv_device;
 	struct onic_private *priv;
 	int major_num,minor_num;
 
@@ -266,8 +266,8 @@ static int onic_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
     printk(KERN_INFO"spmvdev: device minor_num = %d\n",minor_num);
 
 
-    device_create(class,NULL,priv->spmv_dev,priv,DEVICE_NAME);
-
+    spmv_device = device_create(class,NULL,priv->spmv_dev,NULL,DEVICE_NAME);
+	dev_set_drvdata(spmv_device, priv);
 	dev_info(&pdev->dev,"Setup OK!");
 	return 0;
 

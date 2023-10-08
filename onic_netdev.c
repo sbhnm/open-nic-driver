@@ -683,7 +683,7 @@ netdev_tx_t onic_xmit_frame(struct sk_buff *skb, void *dev)
 	u8 *desc_ptr;
 	int rv;
 	// bool debug = 0;
-	bool check_rv = 0;
+	// bool check_rv = 0;
 
 	q = priv->tx_queue[qid];
 	ring = &q->ring;
@@ -697,10 +697,10 @@ netdev_tx_t onic_xmit_frame(struct sk_buff *skb, void *dev)
 	}
 
 	/* minimum Ethernet packet length is 60 */
-	rv = skb_put_padto(skb, ETH_ZLEN);
+	// rv = skb_put_padto(skb, ETH_ZLEN);
 
-	if (rv < 0)
-		check_rv = 1;
+	// if (rv < 0)
+	// 	check_rv = 1;
 
 	dma_addr = dma_map_single(&priv->pdev->dev, skb->data, skb->len,
 				  DMA_TO_DEVICE);
